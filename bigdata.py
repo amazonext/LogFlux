@@ -6,8 +6,10 @@ app = Flask(__name__)
 
 # Palavras que queremos monitorar
 palavras_desejadas = {"INFO", "WARN", "ERROR", "DEBUG", "SEC"}
+# Este dicionário agora será global para persistir os dados entre as requisições
 linhas_por_tag = defaultdict(list)
 
+# ---------------- MAP ----------------
 def mapear_arquivo(conteudo_arquivo, tags_filtradas):
     # Limpamos os dados da análise anterior
     linhas_por_tag.clear()
@@ -25,22 +27,26 @@ def mapear_arquivo(conteudo_arquivo, tags_filtradas):
                 pares.append((palavra_limpa, 1))
     return pares
 
+# ---------------- SHUFFLE ----------------
 def embaralhar(pares):
     agrupado = defaultdict(list)
     for chave, valor in pares:
         agrupado[chave].append(valor)
     return agrupado
 
+# ---------------- REDUCE ----------------
 def reduzir(agrupado):
     resultado = {}
     for chave, valores in agrupado.items():
         resultado[chave] = sum(valores)
     return resultado
 
+# ---------------- ROTA PRINCIPAL (AGORA SÓ CARREGA A PÁGINA) ----------------
 @app.route("/")
 def index():
     return render_template("index.html")
 
+# ---------------- NOVA ROTA DE API PARA PROCESSAR O ARQUIVO ----------------
 @app.route("/processar", methods=["POST"])
 def processar_log():
     try:
@@ -52,6 +58,8 @@ def processar_log():
         if not tags_selecionadas:
             tags_selecionadas = list(palavras_desejadas)
 
+        # ===== AQUI ESTÁ A CORREÇÃO =====
+        # Adicionamos 'errors='ignore'' para evitar quebras por causa da codificação do arquivo.
         conteudo = arquivo.read().decode('utf-8', errors='ignore')
 
         pares = mapear_arquivo(conteudo, set(tags_selecionadas))
@@ -60,8 +68,10 @@ def processar_log():
         
         return jsonify({"resultado": resultado})
     except Exception as e:
+        # Este bloco captura qualquer outro erro inesperado e o envia como JSON
         return jsonify({"erro": str(e)}), 500
 
+# ---------------- ROTA DE API PARA BUSCA DENTRO DE UMA TAG ----------------
 @app.route("/buscar/<tag>")
 def buscar_na_tag(tag):
     termo = request.args.get("q", "").lower()
