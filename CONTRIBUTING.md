@@ -22,7 +22,7 @@ Se você deseja contribuir com código, siga os passos abaixo. Isso torna o proc
 
 2.  **Clone o seu fork** para a sua máquina local:
     ```sh
-    git clone [https://github.com/seu-usuario/logflux.git](https://github.com/seu-usuario/logflux.git)
+    git clone (https://github.com/seu-usuario/logflux.git)
     ```
 
 3.  **Crie uma nova branch** para trabalhar na sua modificação. Escolha um nome descritivo para a branch.
