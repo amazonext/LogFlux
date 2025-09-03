@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import os
 from collections import defaultdict
 
@@ -6,25 +6,25 @@ app = Flask(__name__)
 
 # Palavras que queremos monitorar
 palavras_desejadas = {"INFO", "WARN", "ERROR", "DEBUG", "SEC"}
-linhas_por_tag = defaultdict(list)  # Armazena as linhas onde cada tag aparece
+# Este dicionário agora será global para persistir os dados entre as requisições
+linhas_por_tag = defaultdict(list)
 
 # ---------------- MAP ----------------
-def mapear_arquivo(nome_arquivo, tags_filtradas):
-    linhas_por_tag.clear()  
+def mapear_arquivo(conteudo_arquivo, tags_filtradas):
+    # Limpamos os dados da análise anterior
+    linhas_por_tag.clear()
     pares = []
-    if not os.path.exists(nome_arquivo):
-        raise FileNotFoundError(f"Arquivo {nome_arquivo} não encontrado")
-
-    with open(nome_arquivo, 'r', encoding='utf-8') as f:
-        for linha in f:
-            palavras = linha.strip().split()
-            for palavra in palavras:
-                palavra_limpa = palavra.strip('.,;:!?()[]{}').upper()
-                if palavra_limpa in tags_filtradas:
-                    # Guarda a linha completa para futura busca
-                    linhas_por_tag[palavra_limpa].append(linha.strip())
-                    # Gera um par (TAG, 1) para o MapReduce
-                    pares.append((palavra_limpa, 1))
+    
+    # Processamos o conteúdo do arquivo que veio da requisição
+    for linha in conteudo_arquivo.splitlines():
+        palavras = linha.strip().split()
+        for palavra in palavras:
+            palavra_limpa = palavra.strip('.,;:!?()[]{}').upper()
+            if palavra_limpa in tags_filtradas:
+                # Guarda a linha completa para a funcionalidade de busca
+                linhas_por_tag[palavra_limpa].append(linha.strip())
+                # Gera um par (TAG, 1) para o MapReduce
+                pares.append((palavra_limpa, 1))
     return pares
 
 # ---------------- SHUFFLE ----------------
@@ -38,40 +38,52 @@ def embaralhar(pares):
 def reduzir(agrupado):
     resultado = {}
     for chave, valores in agrupado.items():
-        resultado[chave] = sum(valores)  # conta quantas vezes apareceu
+        resultado[chave] = sum(valores)
     return resultado
 
-# ---------------- ROTA PRINCIPAL ----------------
-@app.route("/", methods=["GET", "POST"])
+# ---------------- ROTA PRINCIPAL (AGORA SÓ CARREGA A PÁGINA) ----------------
+@app.route("/")
 def index():
-    resultado = {}
-    if request.method == "POST":
-        arquivo = request.files["arquivo"]
-        if arquivo:
-            arquivo.save("temp.txt")
-            tags_selecionadas = request.form.getlist("tags")
-            if not tags_selecionadas:
-                tags_selecionadas = list(palavras_desejadas)
+    return render_template("index.html")
 
-            pares = mapear_arquivo("temp.txt", set(tags_selecionadas))
-            agrupado = embaralhar(pares)
-            resultado = reduzir(agrupado)
-            os.remove("temp.txt")
-    return render_template("index.html", resultado=resultado, tags=palavras_desejadas)
+# ---------------- NOVA ROTA DE API PARA PROCESSAR O ARQUIVO ----------------
+@app.route("/processar", methods=["POST"])
+def processar_log():
+    try:
+        arquivo = request.files.get("arquivo")
+        if not arquivo:
+            return jsonify({"erro": "Nenhum arquivo enviado"}), 400
 
-# ---------------- BUSCA DENTRO DE UMA TAG ----------------
+        tags_selecionadas = request.form.getlist("tags")
+        if not tags_selecionadas:
+            tags_selecionadas = list(palavras_desejadas)
+
+        # ===== AQUI ESTÁ A CORREÇÃO =====
+        # Adicionamos 'errors='ignore'' para evitar quebras por causa da codificação do arquivo.
+        conteudo = arquivo.read().decode('utf-8', errors='ignore')
+
+        pares = mapear_arquivo(conteudo, set(tags_selecionadas))
+        agrupado = embaralhar(pares)
+        resultado = reduzir(agrupado)
+        
+        return jsonify({"resultado": resultado})
+    except Exception as e:
+        # Este bloco captura qualquer outro erro inesperado e o envia como JSON
+        return jsonify({"erro": str(e)}), 500
+
+# ---------------- ROTA DE API PARA BUSCA DENTRO DE UMA TAG ----------------
 @app.route("/buscar/<tag>")
-def buscar(tag):
+def buscar_na_tag(tag):
     termo = request.args.get("q", "").lower()
-    resultados = []
+    resultados_filtrados = []
+    tag_upper = tag.upper()
 
-    tag = tag.upper()
-
-    if tag in linhas_por_tag:
-        for i, linha in enumerate(linhas_por_tag[tag], start=1):
+    if tag_upper in linhas_por_tag:
+        for linha in linhas_por_tag[tag_upper]:
             if termo in linha.lower():
-                resultados.append(f"Linha {i}: {linha.strip()}")
-    return {"resultados": resultados}
+                resultados_filtrados.append(linha)
+    
+    return jsonify({"resultados": resultados_filtrados})
 
 if __name__ == "__main__":
     app.run(debug=True)
