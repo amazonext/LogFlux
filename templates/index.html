@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Análise de Syslog</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<h1>Análise de Syslog</h1>
+
+<form method="post" enctype="multipart/form-data">
+    <label>Selecione o arquivo de log:</label><br>
+    <input type="file" name="arquivo" accept=".txt" required><br><br>
+
+    <label>Selecione as tags que deseja contar:</label><br>
+    <label><input type="checkbox" name="tags" value="INFO" checked> INFO</label>
+    <label><input type="checkbox" name="tags" value="WARN" checked> WARN</label>
+    <label><input type="checkbox" name="tags" value="ERROR" checked> ERROR</label>
+    <label><input type="checkbox" name="tags" value="DEBUG" checked> DEBUG</label>
+    <label><input type="checkbox" name="tags" value="SEC" checked> SEC</label><br><br>
+
+    <button type="submit">Enviar</button>
+    <button type="button" onclick="limparTudo()">Limpar</button>
+</form>
+
+<div id="resultado-tags">
+    {% if resultado %}
+    <h2>Tags com Destaque</h2>
+    <ul>
+        {% for palavra, contagem in resultado.items() %}
+        <li class="tag-botao" onclick="mostrarDescricao('{{ palavra }}')">
+            {{ palavra }}: {{ contagem }}
+        </li> 
+    {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+<div id="descricao" class="descricao-container"></div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
