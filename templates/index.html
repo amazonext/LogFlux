@@ -1,43 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Análise de Syslog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogFlux - Análise de Logs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<h1>Análise de Syslog</h1>
 
-<form method="post" enctype="multipart/form-data">
-    <label>Selecione o arquivo de log:</label><br>
-    <input type="file" name="arquivo" accept=".txt" required><br><br>
+    <header class="site-header">
+        <div class="header-content">
+            <img src="/static/images/logo-1-removebg-preview.png" alt="Logotipo AmazoNext" class="logo-img">
+            <h1>LogFlux</h1>
+        </div>
+        <p class="subtitle">Desenvolvido por <strong>AmazoNext</strong></p>
+    </header>
 
-    <label>Selecione as tags que deseja contar:</label><br>
-    <label><input type="checkbox" name="tags" value="INFO" checked> INFO</label>
-    <label><input type="checkbox" name="tags" value="WARN" checked> WARN</label>
-    <label><input type="checkbox" name="tags" value="ERROR" checked> ERROR</label>
-    <label><input type="checkbox" name="tags" value="DEBUG" checked> DEBUG</label>
-    <label><input type="checkbox" name="tags" value="SEC" checked> SEC</label><br><br>
+    <main class="container">
+        <div class="card upload-card animate-on-load">
+            <h2><i class="fa-solid fa-upload"></i> Analisador de Syslog</h2>
+            <form id="log-form" method="post" enctype="multipart/form-data">
+                
+                <div class="form-group">
+                    <label>Selecione o arquivo de log:</label>
+                    <input type="file" id="file-upload" name="arquivo" accept=".txt" required hidden>
+                    
+                    <div class="file-upload-wrapper">
+                        <label for="file-upload" class="custom-file-upload">
+                            <i class="fa-solid fa-folder-open"></i> Escolher Arquivo
+                        </label>
+                        <span id="file-name" class="file-name-display">Nenhum arquivo selecionado</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Selecione as tags para análise:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="tags" value="INFO" checked> INFO</label>
+                        <label><input type="checkbox" name="tags" value="WARN" checked> WARN</label>
+                        <label><input type="checkbox" name="tags" value="ERROR" checked> ERROR</label>
+                        <label><input type="checkbox" name="tags" value="DEBUG" checked> DEBUG</label>
+                        <label><input type="checkbox" name="tags" value="SEC" checked> SEC</label>
+                    </div>
+                </div>
 
-    <button type="submit">Enviar</button>
-    <button type="button" onclick="limparTudo()">Limpar</button>
-</form>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+                    <button type="button" id="btn-limpar-tudo" class="btn btn-secondary"><i class="fa-solid fa-trash"></i> Limpar Tudo</button>
+                </div>
+            </form>
+        </div>
 
-<div id="resultado-tags">
-    {% if resultado %}
-    <h2>Tags com Destaque</h2>
-    <ul>
-        {% for palavra, contagem in resultado.items() %}
-        <li class="tag-botao" onclick="mostrarDescricao('{{ palavra }}')">
-            {{ palavra }}: {{ contagem }}
-        </li> 
-    {% endfor %}
-    </ul>
-    {% endif %}
-</div>
+        <div class="results-container animate-on-load">
+            <div id="resultado-tags" class="card tags-card {% if not resultado %}hidden{% endif %}">
+                <h2><i class="fa-solid fa-tags"></i> Resumo das Tags</h2>
+                <ul class="tags-list">
+                    {% if resultado %}
+                        {% for palavra, contagem in resultado.items() %}
+                            <li class="tag-item" data-tag="{{ palavra }}">
+                                <span class="tag-name">{{ palavra }}</span>
+                                <span class="tag-count">{{ contagem }}</span>
+                            </li>
+                        {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
 
-<div id="descricao" class="descricao-container"></div>
+            <div id="descricao" class="card description-card hidden">
+                </div>
+        </div>
+    </main>
 
-<script src="/static/script.js"></script>
+    <footer class="site-footer">
+        <div class="footer-left">
+            <img src="/static/images/logo-1-removebg-preview.png" alt="Logotipo AmazoNext" class="logo-img-footer">
+            <p>&copy; 2025 AmazoNext. Todos os direitos reservados.</p>
+        </div>
+        <div class="footer-right">
+            <a href="mailto:amazonext0@gmail.com" aria-label="Email" title="Email"><i class="fa-solid fa-envelope"></i></a>
+            <a href="https://github.com/amazonext" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub"><i class="fa-brands fa-github"></i></a>
+            <a href="https://www.instagram.com/amazonext.dev/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+    </footer>
+
+    <script src="/static/script.js"></script>
 </body>
 </html>
