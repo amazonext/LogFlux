@@ -1,11 +1,16 @@
 from flask import Flask, request, render_template, jsonify
 import os
+import re
 from collections import defaultdict
 
 app = Flask(__name__)
 
 # Palavras que queremos monitorar
-palavras_desejadas = {"INFO", "WARN", "ERROR", "DEBUG", "SEC"}
+palavras_desejadas = {
+    "INFO", "WARN", "ERROR", "DEBUG", "SEC",
+    "GENERAL", "SYSTEM", "INTERFACES", "ROUTING", "DNS",
+    "DIAL", "SECURITY", "WARNING"
+}
 linhas_por_tag = defaultdict(list)
 
 def mapear_arquivo(conteudo_arquivo, tags_filtradas):
@@ -15,9 +20,8 @@ def mapear_arquivo(conteudo_arquivo, tags_filtradas):
     
     # Processamos o conteúdo do arquivo que veio da requisição
     for linha in conteudo_arquivo.splitlines():
-        palavras = linha.strip().split()
-        for palavra in palavras:
-            palavra_limpa = palavra.strip('.,;:!?()[]{}').upper()
+        candidatos = re.findall(r"\b[A-Z]+\b", linha.upper())
+        for palavra_limpa in candidatos:
             if palavra_limpa in tags_filtradas:
                 # Guarda a linha completa para a funcionalidade de busca
                 linhas_por_tag[palavra_limpa].append(linha.strip())
